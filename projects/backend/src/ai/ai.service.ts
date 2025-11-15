@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, MessageEvent } from "@nestjs/common";
 import { Observable } from "rxjs";
 import {
   generatePersonalizedItineraryFlow,
@@ -25,7 +25,14 @@ export class AiService {
   generateItineraryStream(
     dto: GeneratePersonalizedItineraryDto,
   ): Observable<MessageEvent> {
-    return new Observable((subscriber) => {
+    return new Observable<MessageEvent>((subscriber) => {
+      // Immediate heartbeat so client knows stream started
+      subscriber.next({
+        data: JSON.stringify({
+          status: "starting",
+          totalDays: dto.numberOfDays,
+        }),
+      });
       void (async () => {
         try {
           let previousDaysContext = "";
@@ -58,7 +65,7 @@ export class AiService {
                   total: dto.numberOfDays,
                 },
               }),
-            } as MessageEvent);
+            });
 
             // Build consolidated context (only place names, no enrichment data)
             const placeNames = output.items.map((item) => item.name).join(", ");
@@ -67,7 +74,7 @@ export class AiService {
 
           subscriber.complete();
         } catch (error) {
-          subscriber.error(error);
+          subscriber.error(error as Error);
         }
       })();
     });
