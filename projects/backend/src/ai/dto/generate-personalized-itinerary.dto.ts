@@ -1,5 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsNumber, IsString } from "class-validator";
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
 export class GeneratePersonalizedItineraryDto {
   @ApiProperty({
@@ -46,4 +52,13 @@ export class GeneratePersonalizedItineraryDto {
   })
   @IsEnum(["solo", "couple", "family", "friends"])
   companionType: "solo" | "couple" | "family" | "friends";
+
+  @ApiProperty({
+    description: "Whether the user has accessibility needs.",
+    required: false,
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  accessibilityNeeds?: boolean;
 }

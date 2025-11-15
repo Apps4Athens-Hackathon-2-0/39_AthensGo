@@ -26,6 +26,10 @@ const SummarizeUserPreferencesInputSchema = z.object({
   companionType: z
     .enum(["solo", "couple", "family", "friends"])
     .describe("The type of companions the user is traveling with."),
+  accessibilityNeeds: z
+    .boolean()
+    .optional()
+    .describe("Whether the user has accessibility needs."),
 });
 
 export type SummarizeUserPreferencesInput = z.infer<
@@ -36,6 +40,7 @@ const SummarizeUserPreferencesOutputSchema = z.object({
   summary: z
     .string()
     .describe("A concise summary of the user preferences for the trip."),
+  accessibilityNeeds: z.boolean().optional(),
 });
 
 export type SummarizeUserPreferencesOutput = z.infer<
@@ -56,12 +61,15 @@ const summarizeUserPreferencesPrompt = ai.definePrompt({
 
   Summarize the following user preferences into a concise and informative summary that will be used to generate a personalized trip itinerary for Athens.
 
+  Also extract if the user has accessibility needs.
+
   Trip Dates: {{tripDates}}
   Number of Days: {{numberOfDays}}
   Budget: {{budget}}
   Interests: {{interests}}
   Travel Style: {{travelStyle}}
   Companion Type: {{companionType}}
+  Accessibility Needs: {{accessibilityNeeds}}
   `,
 });
 

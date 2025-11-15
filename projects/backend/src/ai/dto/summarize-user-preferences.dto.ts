@@ -1,5 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsEnum, IsNumber, IsString } from "class-validator";
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
 export class SummarizeUserPreferencesDto {
   @ApiProperty({
@@ -47,4 +54,12 @@ export class SummarizeUserPreferencesDto {
   })
   @IsEnum(["solo", "couple", "family", "friends"])
   companionType: "solo" | "couple" | "family" | "friends";
+
+  @ApiProperty({
+    required: false,
+    description: "Whether the user has accessibility needs.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  accessibilityNeeds?: boolean;
 }
