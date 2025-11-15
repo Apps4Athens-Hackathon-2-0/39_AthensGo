@@ -72,11 +72,30 @@ const GeneratePersonalizedItineraryOutputSchema = z.object({
     .describe("The generated personalized itinerary."),
 });
 
-// Allow the prompt to return null (when LLM fails) or the valid schema
-const GeneratePersonalizedItineraryPromptOutputSchema = z.union([
-  GeneratePersonalizedItineraryOutputSchema,
-  z.null(),
-]);
+// Schema for generating a single day
+const GenerateSingleDayInputSchema = z.object({
+  tripDates: z.string(),
+  dayNumber: z.number().describe("Which day of the trip (1, 2, 3, etc.)"),
+  totalDays: z.number().describe("Total number of days in the trip"),
+  budget: z.enum(["low", "medium", "high"]),
+  interests: z.string(),
+  travelStyle: z.enum(["relaxed", "packed"]),
+  companionType: z.enum(["solo", "couple", "family", "friends"]),
+  accessibilityNeeds: z.boolean().optional(),
+  previousDaysContext: z
+    .string()
+    .optional()
+    .describe(
+      "Consolidated context: day numbers and place names from previous days to avoid repetition",
+    ),
+});
+
+const SingleDayOutputSchema = z.object({
+  day: z.number(),
+  items: z.array(ItineraryItemSchema),
+});
+
+const SingleDayPromptOutputSchema = z.union([SingleDayOutputSchema, z.null()]);
 
 export type GeneratePersonalizedItineraryInput = z.infer<
   typeof GeneratePersonalizedItineraryInputSchema
@@ -92,51 +111,38 @@ export async function generatePersonalizedItinerary(
   return generatePersonalizedItineraryFlow(input);
 }
 
-const generatePersonalizedItineraryPrompt = ai.definePrompt({
-  name: "generatePersonalizedItineraryPrompt",
-  input: { schema: GeneratePersonalizedItineraryInputSchema },
+// Prompt for generating a single day
+export const generateSingleDayPrompt = ai.definePrompt({
+  name: "generateSingleDayPrompt",
+  input: { schema: GenerateSingleDayInputSchema },
   output: {
     format: "json",
-    schema: GeneratePersonalizedItineraryPromptOutputSchema,
+    schema: SingleDayPromptOutputSchema,
   },
   tools: [findAthensPlaceDetails],
-  prompt: `You are a personal travel assistant specializing in creating itineraries for trips to Athens, Greece.
+  prompt: `You are a personal travel assistant for Athens, Greece.
 
-  Based on the traveler's preferences, generate a personalized itinerary.
+Generate activities for DAY {{{dayNumber}}} of a {{{totalDays}}}-day trip.
 
-  ⚠️ CRITICAL REQUIREMENTS - READ CAREFULLY:
+REQUIREMENTS:
+- Generate 3-5 activities for "relaxed", 5-7 for "packed" style
+- Use 'findAthensPlaceDetails' for EVERY place (real coordinates + enrichment)
+- Include meals: breakfast, lunch, dinner (with ratings, prices, Google Maps links)
+- Budget "{{{budget}}}": low=free/cheap, medium=mid-range, high=premium
+- If accessibilityNeeds is true, prioritize wheelchair-accessible venues
+- AVOID repeating these places: {{{previousDaysContext}}}
 
-  1. **GENERATE ALL DAYS**: You MUST create exactly {{{numberOfDays}}} days. If numberOfDays is 5, you must create day 1, day 2, day 3, day 4, AND day 5. EVERY day must have activities. DO NOT create empty days.
+Context:
+- Day {{{dayNumber}}} of {{{totalDays}}}
+- Dates: {{{tripDates}}}
+- Budget: {{{budget}}}
+- Interests: {{{interests}}}
+- Style: {{{travelStyle}}}
+- Companions: {{{companionType}}}
+- Accessibility: {{{accessibilityNeeds}}}
 
-  2. **ACTIVITIES PER DAY**: 
-     - "relaxed" travel style: 3-5 activities per day
-     - "packed" travel style: 5-7 activities per day
-     - EVERY day from 1 to {{{numberOfDays}}} must have this many activities.
-
-  3. **USE THE TOOL**: For EVERY attraction, restaurant, or point of interest you suggest, you MUST use the 'findAthensPlaceDetails' tool to get its precise coordinates and enrichment data. Do not invent coordinates.
-
-  4. **INCLUDE ENRICHMENT**: Include the complete "enrichment" object returned by the tool for each item: rating, userRatingsTotal, priceLevel, priceString, websiteUrl, googleMapsUrl, isFoodPlace, and the accessible flag (whether the venue has a wheelchair-accessible entrance).
-
-  5. **FOOD PLACES**: For restaurants, cafes, and taverns, always include rating, price information, and Google Maps link.
-
-  6. **BUDGET MATCHING**: 
-     - "low": Free attractions, street food, cheap eats
-     - "medium": Mid-range dining, paid attractions
-     - "high": Premium experiences, fine dining
-
-  7. **ACCESSIBILITY**: If accessibilityNeeds is TRUE, prioritize places with wheelchair-accessible entrances when available.
-
-  Trip Details:
-  - Dates: {{{tripDates}}}
-  - Number of Days: {{{numberOfDays}}} (GENERATE THIS MANY DAYS!)
-  - Budget: {{{budget}}}
-  - Interests: {{{interests}}}
-  - Travel Style: {{{travelStyle}}}
-  - Companions: {{{companionType}}}
-  - Accessibility: {{{accessibilityNeeds}}}
-
-  REMINDER: Generate a COMPLETE {{{numberOfDays}}}-day itinerary. Each day must have activities. Count from day 1 to day {{{numberOfDays}}} and fill each one with appropriate activities based on the travel style.
-  `,
+Return JSON: { day: {{{dayNumber}}}, items: [...] }
+`,
 });
 
 export const generatePersonalizedItineraryFlow = ai.defineFlow(
@@ -146,15 +152,34 @@ export const generatePersonalizedItineraryFlow = ai.defineFlow(
     outputSchema: GeneratePersonalizedItineraryOutputSchema,
   },
   async (input) => {
-    const { output } = await generatePersonalizedItineraryPrompt(input);
+    const allDays: Array<{ day: number; items: ItineraryItem[] }> = [];
+    let previousDaysContext = "";
 
-    // Guard: if the model failed to produce a valid object, throw an error
-    if (!output || !Array.isArray(output.itinerary)) {
-      throw new Error(
-        "Failed to generate itinerary. The AI service is currently unavailable. Please try again in a moment.",
-      );
+    // Generate each day separately
+    for (let dayNum = 1; dayNum <= input.numberOfDays; dayNum++) {
+      const { output } = await generateSingleDayPrompt({
+        tripDates: input.tripDates,
+        dayNumber: dayNum,
+        totalDays: input.numberOfDays,
+        budget: input.budget,
+        interests: input.interests,
+        travelStyle: input.travelStyle,
+        companionType: input.companionType,
+        accessibilityNeeds: input.accessibilityNeeds,
+        previousDaysContext,
+      });
+
+      if (!output || !Array.isArray(output.items)) {
+        throw new Error(`Failed to generate day ${dayNum}. Please try again.`);
+      }
+
+      allDays.push(output);
+
+      // Build consolidated context (only day # and place names, no full enrichment)
+      const placeNames = output.items.map((item) => item.name).join(", ");
+      previousDaysContext += `Day ${dayNum}: ${placeNames}. `;
     }
 
-    return output;
+    return { itinerary: allDays };
   },
 );
