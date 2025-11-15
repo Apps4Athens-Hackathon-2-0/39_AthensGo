@@ -1,0 +1,5 @@
+{
+  "name": "athensgo",
+  "private": true,
+  "workspaces": ["projects/*"]
+}
