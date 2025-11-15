@@ -1,8 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import { generatePersonalizedItineraryFlow } from "./flows/generate-personalized-itinerary.flow";
+import { Observable } from "rxjs";
+import {
+  generatePersonalizedItineraryFlow,
+  generateSingleDayPrompt,
+} from "./flows/generate-personalized-itinerary.flow";
 import { summarizeUserPreferencesFlow } from "./flows/summarize-user-preferences.flow";
 import { GeneratePersonalizedItineraryDto } from "./dto/generate-personalized-itinerary.dto";
 import { SummarizeUserPreferencesDto } from "./dto/summarize-user-preferences.dto";
+import { computeAccessibilityScore } from "./tools/accessibility-score";
 
 @Injectable()
 export class AiService {
@@ -16,5 +21,64 @@ export class AiService {
     dto: SummarizeUserPreferencesDto,
   ): Promise<unknown> {
     return await summarizeUserPreferencesFlow.run(dto);
+  }
+
+  generateItineraryStream(
+    dto: GeneratePersonalizedItineraryDto,
+  ): Observable<MessageEvent> {
+    return new Observable((subscriber) => {
+      void (async () => {
+        try {
+          let previousDaysContext = "";
+
+          for (let dayNum = 1; dayNum <= dto.numberOfDays; dayNum++) {
+            const { output } = await generateSingleDayPrompt({
+              tripDates: dto.tripDates,
+              dayNumber: dayNum,
+              totalDays: dto.numberOfDays,
+              budget: dto.budget,
+              interests: dto.interests,
+              travelStyle: dto.travelStyle,
+              companionType: dto.companionType,
+              accessibilityNeeds: dto.accessibilityNeeds,
+              previousDaysContext,
+            });
+
+            if (!output || !Array.isArray(output.items)) {
+              subscriber.error(new Error(`Failed to generate day ${dayNum}`));
+              return;
+            }
+
+            // Post-process to compute accessibilityScore if user has accessibility needs
+            if (dto.accessibilityNeeds) {
+              for (const item of output.items) {
+                const attrs = item.enrichment?.accessibility ?? null;
+                item.accessibilityScore = computeAccessibilityScore(attrs);
+              }
+            }
+
+            // Send this day immediately to the client
+            subscriber.next({
+              data: JSON.stringify({
+                day: output.day,
+                items: output.items,
+                progress: {
+                  current: dayNum,
+                  total: dto.numberOfDays,
+                },
+              }),
+            } as MessageEvent);
+
+            // Build consolidated context (only place names, no enrichment data)
+            const placeNames = output.items.map((item) => item.name).join(", ");
+            previousDaysContext += `Day ${dayNum}: ${placeNames}. `;
+          }
+
+          subscriber.complete();
+        } catch (error) {
+          subscriber.error(error);
+        }
+      })();
+    });
   }
 }

@@ -1,4 +1,5 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Post, Sse } from "@nestjs/common";
+import { Observable } from "rxjs";
 import { AiService } from "./ai.service";
 import { GeneratePersonalizedItineraryDto } from "./dto/generate-personalized-itinerary.dto";
 import { SummarizeUserPreferencesDto } from "./dto/summarize-user-preferences.dto";
@@ -23,5 +24,13 @@ export class AiController {
   @ApiResponse({ status: 200, description: "The summarized preferences" })
   async summarizeUserPreferences(@Body() dto: SummarizeUserPreferencesDto) {
     return this.aiService.summarizeUserPreferences(dto);
+  }
+
+  @Sse("generate-itinerary-stream")
+  @ApiOperation({ summary: "Generate itinerary with streaming (day-by-day)" })
+  generateItineraryStream(
+    @Body() dto: GeneratePersonalizedItineraryDto,
+  ): Observable<MessageEvent> {
+    return this.aiService.generateItineraryStream(dto);
   }
 }
