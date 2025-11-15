@@ -2,16 +2,16 @@
  * @fileOverview A Genkit tool for interacting with the Google Maps Places API.
  */
 
-import { Place, TextSearchRequest } from '@googlemaps/google-maps-services-js';
-import { mapsClient } from '../maps';
-import { ai } from '../genkit';
-import { z } from 'genkit';
+import { Place, TextSearchRequest } from "@googlemaps/google-maps-services-js";
+import { mapsClient } from "../maps";
+import { ai } from "../genkit";
+import { z } from "genkit";
 
 export const findAthensPlaceDetails = ai.defineTool(
   {
-    name: 'findAthensPlaceDetails',
+    name: "findAthensPlaceDetails",
     description:
-      'Search for places in Athens, Greece to get details like name, description, category, and precise coordinates. Use this to find attractions, restaurants, or other points of interest.',
+      "Search for places in Athens, Greece to get details like name, description, category, and precise coordinates. Use this to find attractions, restaurants, or other points of interest.",
     inputSchema: z.object({
       query: z
         .string()

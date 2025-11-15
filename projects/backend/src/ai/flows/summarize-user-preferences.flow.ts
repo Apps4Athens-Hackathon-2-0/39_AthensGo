@@ -6,26 +6,26 @@
  * - SummarizeUserPreferencesOutput - The return type for the summarizeUserPreferences function.
  */
 
-import { ai } from '../genkit';
-import { z } from 'genkit';
+import { ai } from "../genkit";
+import { z } from "genkit";
 
 const SummarizeUserPreferencesInputSchema = z.object({
-  tripDates: z.string().describe('The start and end dates of the trip.'),
-  numberOfDays: z.number().describe('The number of days for the trip.'),
+  tripDates: z.string().describe("The start and end dates of the trip."),
+  numberOfDays: z.number().describe("The number of days for the trip."),
   budget: z
-    .enum(['low', 'medium', 'high'])
-    .describe('The budget for the trip.'),
+    .enum(["low", "medium", "high"])
+    .describe("The budget for the trip."),
   interests: z
     .array(z.string())
     .describe(
-      'The interests of the user (e.g., history, food, nightlife, beaches).',
+      "The interests of the user (e.g., history, food, nightlife, beaches).",
     ),
   travelStyle: z
-    .enum(['relaxed', 'packed'])
-    .describe('The travel style of the user.'),
+    .enum(["relaxed", "packed"])
+    .describe("The travel style of the user."),
   companionType: z
-    .enum(['solo', 'couple', 'family', 'friends'])
-    .describe('The type of companions the user is traveling with.'),
+    .enum(["solo", "couple", "family", "friends"])
+    .describe("The type of companions the user is traveling with."),
 });
 
 export type SummarizeUserPreferencesInput = z.infer<
@@ -35,7 +35,7 @@ export type SummarizeUserPreferencesInput = z.infer<
 const SummarizeUserPreferencesOutputSchema = z.object({
   summary: z
     .string()
-    .describe('A concise summary of the user preferences for the trip.'),
+    .describe("A concise summary of the user preferences for the trip."),
 });
 
 export type SummarizeUserPreferencesOutput = z.infer<
@@ -49,7 +49,7 @@ export async function summarizeUserPreferences(
 }
 
 const summarizeUserPreferencesPrompt = ai.definePrompt({
-  name: 'summarizeUserPreferencesPrompt',
+  name: "summarizeUserPreferencesPrompt",
   input: { schema: SummarizeUserPreferencesInputSchema },
   output: { schema: SummarizeUserPreferencesOutputSchema },
   prompt: `You are an expert trip planner, skilled at understanding user preferences and creating personalized trip summaries.
@@ -67,7 +67,7 @@ const summarizeUserPreferencesPrompt = ai.definePrompt({
 
 export const summarizeUserPreferencesFlow = ai.defineFlow(
   {
-    name: 'summarizeUserPreferencesFlow',
+    name: "summarizeUserPreferencesFlow",
     inputSchema: SummarizeUserPreferencesInputSchema,
     outputSchema: SummarizeUserPreferencesOutputSchema,
   },

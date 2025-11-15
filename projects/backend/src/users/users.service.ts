@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { User } from './entities';
+import { Injectable } from "@nestjs/common";
+import { User } from "./entities";
 
 @Injectable()
 export class UsersService {
   private readonly users: User[] = [
     {
       userId: 1,
-      email: 'john@example.com',
-      password: 'changeme',
+      email: "john@example.com",
+      password: "changeme",
     },
     {
       userId: 2,
-      email: 'maria@example.com',
-      password: 'guess',
+      email: "maria@example.com",
+      password: "guess",
     },
   ];
 

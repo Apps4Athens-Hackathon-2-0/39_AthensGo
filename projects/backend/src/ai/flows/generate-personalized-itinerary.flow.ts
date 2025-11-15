@@ -6,23 +6,23 @@
  * - GeneratePersonalizedItineraryOutput - The return type for the generatePersonalizedItinerary function.
  */
 
-import { ai } from '../genkit';
-import { findAthensPlaceDetails } from '../tools/google-maps.tool';
-import { z } from 'genkit';
+import { ai } from "../genkit";
+import { findAthensPlaceDetails } from "../tools/google-maps.tool";
+import { z } from "genkit";
 
 const GeneratePersonalizedItineraryInputSchema = z.object({
-  tripDates: z.string().describe('The start and end dates of the trip.'),
-  numberOfDays: z.number().describe('The number of days for the trip.'),
+  tripDates: z.string().describe("The start and end dates of the trip."),
+  numberOfDays: z.number().describe("The number of days for the trip."),
   budget: z
-    .enum(['low', 'medium', 'high'])
-    .describe('The budget for the trip.'),
-  interests: z.string().describe('The interests of the traveler.'),
+    .enum(["low", "medium", "high"])
+    .describe("The budget for the trip."),
+  interests: z.string().describe("The interests of the traveler."),
   travelStyle: z
-    .enum(['relaxed', 'packed'])
-    .describe('The travel style of the traveler.'),
+    .enum(["relaxed", "packed"])
+    .describe("The travel style of the traveler."),
   companionType: z
-    .enum(['solo', 'couple', 'family', 'friends'])
-    .describe('The type of companions for the trip.'),
+    .enum(["solo", "couple", "family", "friends"])
+    .describe("The type of companions for the trip."),
 });
 export type GeneratePersonalizedItineraryInput = z.infer<
   typeof GeneratePersonalizedItineraryInputSchema
@@ -32,27 +32,27 @@ export type GeneratePersonalizedItineraryInput = z.infer<
 const ItineraryItemSchema = z.object({
   name: z
     .string()
-    .describe('The name of the attraction, restaurant, or experience.'),
-  description: z.string().describe('A short description of the item.'),
+    .describe("The name of the attraction, restaurant, or experience."),
+  description: z.string().describe("A short description of the item."),
   category: z
     .string()
-    .describe('The category of the item (cultural, culinary, scenic, etc.).'),
+    .describe("The category of the item (cultural, culinary, scenic, etc.)."),
   // Flattened location fields
-  latitude: z.number().describe('The latitude of the location.'),
-  longitude: z.number().describe('The longitude of the location.'),
+  latitude: z.number().describe("The latitude of the location."),
+  longitude: z.number().describe("The longitude of the location."),
 });
 
 const GeneratePersonalizedItineraryOutputSchema = z.object({
   itinerary: z
     .array(
       z.object({
-        day: z.number().describe('The day number in the itinerary.'),
+        day: z.number().describe("The day number in the itinerary."),
         items: z
           .array(ItineraryItemSchema)
-          .describe('The list of itinerary items for the day.'),
+          .describe("The list of itinerary items for the day."),
       }),
     )
-    .describe('The generated personalized itinerary.'),
+    .describe("The generated personalized itinerary."),
 });
 export type GeneratePersonalizedItineraryOutput = z.infer<
   typeof GeneratePersonalizedItineraryOutputSchema
@@ -65,7 +65,7 @@ export async function generatePersonalizedItinerary(
 }
 
 const generatePersonalizedItineraryPrompt = ai.definePrompt({
-  name: 'generatePersonalizedItineraryPrompt',
+  name: "generatePersonalizedItineraryPrompt",
   input: { schema: GeneratePersonalizedItineraryInputSchema },
   output: { schema: GeneratePersonalizedItineraryOutputSchema },
   tools: [findAthensPlaceDetails],
@@ -87,7 +87,7 @@ const generatePersonalizedItineraryPrompt = ai.definePrompt({
 
 export const generatePersonalizedItineraryFlow = ai.defineFlow(
   {
-    name: 'generatePersonalizedItineraryFlow',
+    name: "generatePersonalizedItineraryFlow",
     inputSchema: GeneratePersonalizedItineraryInputSchema,
     outputSchema: GeneratePersonalizedItineraryOutputSchema,
   },
