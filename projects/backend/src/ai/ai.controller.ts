@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Sse } from "@nestjs/common";
+import { Body, Controller, MessageEvent, Post, Sse } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { AiService } from "./ai.service";
 import { GeneratePersonalizedItineraryDto } from "./dto/generate-personalized-itinerary.dto";
