@@ -102,7 +102,9 @@ cd /home/runner/work/39_AthensGo/39_AthensGo/projects/backend
 npm run start:dev
 
 # Terminal 2: Test streaming endpoint
-curl -N -X GET "http://localhost:3000/ai/generate-itinerary-stream?tripDates=2025-11-15%20to%202025-11-20&numberOfDays=5&budget=medium&interests=history%2C%20food%2C%20and%20nightlife&travelStyle=relaxed&companionType=couple&accessibilityNeeds=true"
+curl -N -X POST "http://localhost:3000/ai/generate-itinerary-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"tripDates":"2025-11-15 to 2025-11-20","numberOfDays":5,"budget":"medium","interests":"history, food, and nightlife","travelStyle":"relaxed","companionType":"couple","accessibilityNeeds":true}'
 ```
 
 **Expected Output:**
