@@ -26,13 +26,6 @@ export class AiService {
     dto: GeneratePersonalizedItineraryDto,
   ): Observable<MessageEvent> {
     return new Observable<MessageEvent>((subscriber) => {
-      // Immediate heartbeat so client knows stream started
-      subscriber.next({
-        data: JSON.stringify({
-          status: "starting",
-          totalDays: dto.numberOfDays,
-        }),
-      });
       void (async () => {
         try {
           let previousDaysContext = "";
@@ -65,7 +58,7 @@ export class AiService {
                   total: dto.numberOfDays,
                 },
               }),
-            });
+            } as MessageEvent);
 
             // Build consolidated context (only place names, no enrichment data)
             const placeNames = output.items.map((item) => item.name).join(", ");
