@@ -59,9 +59,9 @@ const summarizeUserPreferencesPrompt = ai.definePrompt({
   output: { schema: SummarizeUserPreferencesOutputSchema },
   prompt: `You are an expert trip planner, skilled at understanding user preferences and creating personalized trip summaries.
 
-  Summarize the following user preferences into a concise and informative summary that will be used to generate a personalized trip itinerary for Athens.
+  Summarize the following user preferences into a concise and informative summary that will be used to generate a personalized trip itinerary for Athens, Greece.
 
-  Also extract if the user has accessibility needs.
+  The summary should capture the essence of the trip: the duration, budget level, key interests, travel pace, who they're traveling with, and whether they need wheelchair-accessible venues.
 
   Trip Dates: {{tripDates}}
   Number of Days: {{numberOfDays}}
@@ -70,6 +70,8 @@ const summarizeUserPreferencesPrompt = ai.definePrompt({
   Travel Style: {{travelStyle}}
   Companion Type: {{companionType}}
   Accessibility Needs: {{accessibilityNeeds}}
+
+  If accessibilityNeeds is true, emphasize in the summary that the traveler requires wheelchair-accessible entrances, restrooms, parking, and seating where available, and that accessibility should be prioritized when selecting venues.
   `,
 });
 

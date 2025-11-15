@@ -11,7 +11,7 @@ import {
 import { mapsClient } from "../maps";
 import { ai } from "../genkit";
 import { z } from "genkit";
-import { PlaceEnrichment } from "../types/place";
+import { PlaceEnrichment } from "../types/place.type";
 
 interface PlaceDetailsResult {
   rating?: number;
@@ -21,9 +21,8 @@ interface PlaceDetailsResult {
   url?: string;
   types?: string[];
   wheelchair_accessible_entrance?: boolean;
-  wheelchair_accessible_restroom?: boolean;
-  wheelchair_accessible_parking?: boolean;
-  wheelchair_accessible_seating?: boolean;
+  // Note: Legacy Places API only supports wheelchair_accessible_entrance
+  // Other accessibility fields require the new Places API v1
 }
 
 interface PlaceWithExtras extends Place {
@@ -51,10 +50,10 @@ function extractTypes(t: unknown): string[] {
 
 export function toPriceString(level?: number | null): string | null {
   if (level == null) return null;
-  if (level <= 0) return "$";
-  if (level === 1) return "$$";
-  if (level === 2) return "$$$";
-  if (level >= 3) return "$$$$";
+  if (level <= 0) return "€";
+  if (level === 1) return "€€";
+  if (level === 2) return "€€€";
+  if (level >= 3) return "€€€€";
   return null;
 }
 
@@ -101,15 +100,13 @@ export const findAthensPlaceDetails = ai.defineTool(
             websiteUrl: z.string().nullable().optional(),
             googleMapsUrl: z.string().nullable().optional(),
             isFoodPlace: z.boolean().optional(),
-            accessibility: z
-              .object({
-                wheelchairAccessibleEntrance: z.boolean().nullable().optional(),
-                wheelchairAccessibleRestroom: z.boolean().nullable().optional(),
-                wheelchairAccessibleParking: z.boolean().nullable().optional(),
-                wheelchairAccessibleSeating: z.boolean().nullable().optional(),
-              })
+            accessible: z
+              .boolean()
               .nullable()
-              .optional(),
+              .optional()
+              .describe(
+                "Whether the place has wheelchair accessible entrance (true/false), or null if unknown.",
+              ),
           })
           .optional(),
       }),
@@ -143,12 +140,7 @@ export const findAthensPlaceDetails = ai.defineTool(
             ? `https://www.google.com/maps/place/?q=place_id:${placeId}`
             : null,
           isFoodPlace: isFood(extractTypes(typedPlace.types)),
-          accessibility: {
-            wheelchairAccessibleEntrance: null,
-            wheelchairAccessibleRestroom: null,
-            wheelchairAccessibleParking: null,
-            wheelchairAccessibleSeating: null,
-          },
+          accessible: null, // Will be fetched from Place Details if available
         };
 
         if (placeId) {
@@ -165,9 +157,8 @@ export const findAthensPlaceDetails = ai.defineTool(
                   "user_ratings_total",
                   "types",
                   "wheelchair_accessible_entrance",
-                  "wheelchair_accessible_restroom",
-                  "wheelchair_accessible_parking",
-                  "wheelchair_accessible_seating",
+                  // Note: Only wheelchair_accessible_entrance is supported in legacy Places API
+                  // Other fields (restroom, parking, seating) require Places API (new) v1
                 ],
               },
             };
@@ -199,24 +190,10 @@ export const findAthensPlaceDetails = ai.defineTool(
                     ? r.url
                     : (enrichment.googleMapsUrl ?? null),
                 isFoodPlace: isFood(extractTypes(r.types ?? typedPlace.types)),
-                accessibility: {
-                  wheelchairAccessibleEntrance:
-                    typeof r.wheelchair_accessible_entrance === "boolean"
-                      ? r.wheelchair_accessible_entrance
-                      : null,
-                  wheelchairAccessibleRestroom:
-                    typeof r.wheelchair_accessible_restroom === "boolean"
-                      ? r.wheelchair_accessible_restroom
-                      : null,
-                  wheelchairAccessibleParking:
-                    typeof r.wheelchair_accessible_parking === "boolean"
-                      ? r.wheelchair_accessible_parking
-                      : null,
-                  wheelchairAccessibleSeating:
-                    typeof r.wheelchair_accessible_seating === "boolean"
-                      ? r.wheelchair_accessible_seating
-                      : null,
-                },
+                accessible:
+                  typeof r.wheelchair_accessible_entrance === "boolean"
+                    ? r.wheelchair_accessible_entrance
+                    : null,
               };
             }
           } catch {
