@@ -1,19 +1,8 @@
+// Web-specific implementation - no react-native-maps
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-// Only import MapView on native platforms
-let MapView: any;
-let Marker: any;
-let PROVIDER_GOOGLE: any;
-
-if (Platform.OS !== 'web') {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-}
 
 interface MapComponentProps {
   children?: React.ReactNode;
@@ -48,25 +37,18 @@ function WebMapPlaceholder({ style }: { style?: any }) {
   );
 }
 
-// Platform-specific map component
+// Web implementation - always returns placeholder
 export function PlatformMapView(props: MapComponentProps & { ref?: any }) {
-  if (Platform.OS === 'web') {
-    return <WebMapPlaceholder style={props.style} />;
-  }
-
-  return <MapView {...props} />;
+  return <WebMapPlaceholder style={props.style} />;
 }
 
-// Export Marker component (web-safe)
+// Web implementation - always returns null
 export function PlatformMarker(props: any) {
-  if (Platform.OS === 'web') {
-    return null;
-  }
-  return <Marker {...props} />;
+  return null;
 }
 
-// Export provider constant
-export const PLATFORM_PROVIDER_GOOGLE = Platform.OS === 'web' ? undefined : PROVIDER_GOOGLE;
+// Web implementation - no provider needed
+export const PLATFORM_PROVIDER_GOOGLE = undefined;
 
 const styles = StyleSheet.create({
   webPlaceholder: {
