@@ -38,13 +38,6 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      [
-        "@rnmapbox/maps",
-        {
-          "RNMapboxMapsDownloadToken": "PLACEHOLDER_TOKEN",
-          "RNMapboxMapsVersion": "11.0.0"
-        }
       ]
     ],
     "experiments": {
