@@ -3,7 +3,7 @@
  */
 
 // API Configuration
-export const API_BASE_URL = 'http://localhost:3001';
+export const API_BASE_URL = 'https://aabb6c501e2a.ngrok-free.app';
 
 // App Information
 export const APP_NAME = 'AthensGo';

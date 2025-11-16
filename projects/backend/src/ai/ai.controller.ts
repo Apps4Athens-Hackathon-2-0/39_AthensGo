@@ -1,4 +1,5 @@
-import { Body, Controller, MessageEvent, Post, Sse } from "@nestjs/common";
+import { Body, Controller, MessageEvent, Post, Res, Sse } from "@nestjs/common";
+import type { Response } from "express";
 import { Observable } from "rxjs";
 import { AiService } from "./ai.service";
 import { GeneratePersonalizedItineraryDto } from "./dto/generate-personalized-itinerary.dto";
@@ -42,5 +43,49 @@ export class AiController {
     @Body() dto: GeneratePersonalizedItineraryDto,
   ): Observable<MessageEvent> {
     return this.aiService.generateItineraryStream(dto);
+  }
+
+  @Post("generate-itinerary-stream")
+  @ApiOperation({
+    summary: "Generate itinerary with streaming (POST version for mobile)",
+  })
+  @ApiBody({
+    type: GeneratePersonalizedItineraryDto,
+    description: "Itinerary generation parameters",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Server-Sent Events stream of daily itinerary items (text/event-stream)",
+  })
+  generateItineraryStreamPost(
+    @Body() dto: GeneratePersonalizedItineraryDto,
+    @Res() res: Response,
+  ): void {
+    // Set SSE headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering
+
+    const observable = this.aiService.generateItineraryStream(dto);
+
+    observable.subscribe({
+      next: (event) => {
+        const data =
+          typeof event.data === "string"
+            ? event.data
+            : JSON.stringify(event.data);
+        res.write(`data: ${data}\n\n`);
+      },
+      error: (error: Error) => {
+        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.end();
+      },
+      complete: () => {
+        res.end();
+      },
+    });
   }
 }

@@ -7,9 +7,7 @@ import {
   AccessTokenDto,
   UserDto,
 } from '@/types/api';
-
-// API base URL - in production this would come from environment variables
-const API_BASE_URL = 'http://localhost:3001';
+import { API_BASE_URL } from '@/constants/config';
 
 class ApiService {
   private baseUrl: string;
@@ -51,19 +49,28 @@ class ApiService {
   async summarizeUserPreferences(
     data: SummarizeUserPreferencesDto
   ): Promise<SummarizeUserPreferencesResponse> {
-    const response = await fetch(`${this.baseUrl}/ai/summarize-user-preferences`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/ai/summarize-user-preferences`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(data),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to summarize preferences: ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to summarize preferences: ${response.statusText} - ${errorText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message === 'Network request failed') {
+        throw new Error('Cannot connect to server. Please check your internet connection and ensure the backend is running.');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   /**
@@ -73,52 +80,76 @@ class ApiService {
   async *generateItineraryStream(
     data: GeneratePersonalizedItineraryDto
   ): AsyncGenerator<DailyItinerary, void, unknown> {
-    const response = await fetch(`${this.baseUrl}/ai/generate-itinerary-stream`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/event-stream',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to generate itinerary: ${response.statusText}`);
-    }
-
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) {
-      throw new Error('Response body is not readable');
-    }
-
-    let buffer = '';
-
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
+      console.log('Calling itinerary stream with data:', JSON.stringify(data));
+      console.log('Using URL:', `${this.baseUrl}/ai/generate-itinerary-stream`);
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+      const response = await fetch(`${this.baseUrl}/ai/generate-itinerary-stream`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'text/event-stream',
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(data),
+      });
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            try {
-              const parsed = JSON.parse(data);
-              yield parsed as DailyItinerary;
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e);
+      console.log('Response status:', response.status);
+      console.log('Response statusText:', response.statusText);
+
+      if (!response.ok) {
+        let errorMessage = `Failed to generate itinerary: ${response.status} ${response.statusText}`;
+        try {
+          const errorText = await response.text();
+          console.error('Error response body:', errorText);
+          errorMessage += ` - ${errorText}`;
+        } catch (e) {
+          console.error('Could not read error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              try {
+                const parsed = JSON.parse(data);
+                console.log('Received day:', parsed.day);
+                yield parsed as DailyItinerary;
+              } catch (e) {
+                console.error('Failed to parse SSE data:', e, 'Line:', line);
+              }
             }
           }
         }
+      } finally {
+        reader.releaseLock();
       }
-    } finally {
-      reader.releaseLock();
+    } catch (error) {
+      console.error('generateItineraryStream error:', error);
+      if (error instanceof TypeError && error.message === 'Network request failed') {
+        throw new Error('Cannot connect to server. Please check your internet connection and ensure the backend is running.');
+      }
+      throw error;
     }
   }
 
