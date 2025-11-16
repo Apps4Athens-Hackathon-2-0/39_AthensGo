@@ -5,25 +5,40 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Greek flag colors
+const greekBlue = '#0D5EAF';
+const greekBlueLight = '#4A90E2';
+const white = '#FFFFFF';
+const lightGray = '#F5F5F5';
+const darkGray = '#2C3E50';
+
+const tintColorLight = greekBlue;
+const tintColorDark = greekBlueLight;
 
 export const Colors = {
   light: {
     text: '#11181C',
-    background: '#fff',
+    background: white,
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    primary: greekBlue,
+    secondary: white,
+    card: white,
+    border: '#E0E0E0',
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#0A1628',
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    primary: greekBlueLight,
+    secondary: darkGray,
+    card: '#1A2332',
+    border: '#2C3E50',
   },
 };
 
