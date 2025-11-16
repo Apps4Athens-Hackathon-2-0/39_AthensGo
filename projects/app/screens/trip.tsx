@@ -35,18 +35,27 @@ export default function TripScreen() {
   const numberOfDays = tripPreferences?.numberOfDays || 3;
 
   // Center map on items when day changes (only on native)
+  // Note: MapLibre uses camera API instead of fitToCoordinates
   useEffect(() => {
     if (Platform.OS === 'web') return;
     
     if (currentDayItinerary && currentDayItinerary.items.length > 0 && mapRef.current) {
-      const coordinates = currentDayItinerary.items.map((item) => ({
-        latitude: item.latitude,
-        longitude: item.longitude,
-      }));
-
-      mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
+      // MapLibre requires camera control through Camera component
+      // We'll handle this through the Camera component's bounds instead
+      const coordinates = currentDayItinerary.items.map((item) => [
+        item.longitude,
+        item.latitude,
+      ]);
+      
+      // Calculate center point
+      const avgLon = coordinates.reduce((sum, coord) => sum + coord[0], 0) / coordinates.length;
+      const avgLat = coordinates.reduce((sum, coord) => sum + coord[1], 0) / coordinates.length;
+      
+      // Update camera to center on points
+      mapRef.current?.setCamera({
+        centerCoordinate: [avgLon, avgLat],
+        zoomLevel: 13,
+        animationDuration: 1000,
       });
     }
   }, [selectedDay, currentDayItinerary]);
