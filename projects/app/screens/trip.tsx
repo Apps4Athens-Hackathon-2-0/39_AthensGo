@@ -10,7 +10,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { PlatformMapView, PlatformMarker, PLATFORM_PROVIDER_GOOGLE } from '@/components/platform-map';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useApp } from '@/contexts/app-context';
 import { ItineraryItem } from '@/types/api';
@@ -29,13 +29,15 @@ export default function TripScreen() {
   const [selectedDay, setSelectedDay] = useState(1);
   const [selectedItem, setSelectedItem] = useState<ItineraryItem | null>(null);
   const [bookedItems, setBookedItems] = useState<Set<string>>(new Set());
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
 
   const currentDayItinerary = itinerary.find((day) => day.day === selectedDay);
   const numberOfDays = tripPreferences?.numberOfDays || 3;
 
-  // Center map on items when day changes
+  // Center map on items when day changes (only on native)
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+    
     if (currentDayItinerary && currentDayItinerary.items.length > 0 && mapRef.current) {
       const coordinates = currentDayItinerary.items.map((item) => ({
         latitude: item.latitude,
@@ -115,9 +117,9 @@ export default function TripScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Map Section */}
       <View style={styles.mapContainer}>
-        <MapView
+        <PlatformMapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
+          provider={PLATFORM_PROVIDER_GOOGLE}
           style={styles.map}
           initialRegion={{
             latitude: 37.9838,
@@ -127,7 +129,7 @@ export default function TripScreen() {
           }}
         >
           {currentDayItinerary?.items.map((item, index) => (
-            <Marker
+            <PlatformMarker
               key={`${item.name}-${index}`}
               coordinate={{
                 latitude: item.latitude,
@@ -139,7 +141,7 @@ export default function TripScreen() {
               pinColor={colors.primary}
             />
           ))}
-        </MapView>
+        </PlatformMapView>
 
         {selectedItem && (
           <View style={[styles.mapCallout, { backgroundColor: colors.card }]}>

@@ -172,6 +172,11 @@ Your phone can't reach `localhost:3001`. You need to expose your backend:
    bun start --clear
    ```
 
+**Note on Web Preview:**
+- Maps are only supported on iOS and Android (native platforms)
+- When running on web (`bun start` and press `w`), you'll see a placeholder message
+- For full map functionality, use Expo Go on a physical device or emulator
+
 ### App Won't Load
 
 **Problem:** Red error screen or infinite loading
